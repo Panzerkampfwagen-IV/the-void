@@ -90,7 +90,6 @@ const Browser = () => {
     setIsSearching(true);
     setEmulatedContent(null);
     
-    // Ensure URL has protocol
     const formattedUrl = url.startsWith('http') ? url : `https://${url}`;
     setCurrentUrl(formattedUrl);
 
@@ -100,23 +99,54 @@ const Browser = () => {
       if (result.success && result.data) {
         const htmlContent = result.data.data?.[0]?.html;
         if (htmlContent) {
-          // Create a sanitized version of the HTML content
           const parser = new DOMParser();
           const doc = parser.parseFromString(htmlContent, 'text/html');
           
-          // Remove scripts for security
-          doc.querySelectorAll('script').forEach(script => script.remove());
+          // Remove potentially harmful elements
+          doc.querySelectorAll('script, iframe, frame, object, embed').forEach(el => el.remove());
           
-          // Update relative URLs to absolute
+          // Convert all relative URLs to absolute
           doc.querySelectorAll('[src], [href]').forEach(el => {
             ['src', 'href'].forEach(attr => {
               const value = el.getAttribute(attr);
               if (value && !value.startsWith('http') && !value.startsWith('data:')) {
-                el.setAttribute(attr, new URL(value, formattedUrl).href);
+                try {
+                  el.setAttribute(attr, new URL(value, formattedUrl).href);
+                } catch (e) {
+                  // Invalid URL, skip
+                }
               }
             });
           });
-          
+
+          // Preserve original styles
+          const baseTag = doc.createElement('base');
+          baseTag.href = formattedUrl;
+          doc.head.insertBefore(baseTag, doc.head.firstChild);
+
+          // Ensure all stylesheets are loaded
+          const styleSheets = Array.from(doc.querySelectorAll('link[rel="stylesheet"]'));
+          styleSheets.forEach(stylesheet => {
+            const href = stylesheet.getAttribute('href');
+            if (href && !href.startsWith('http')) {
+              stylesheet.setAttribute('href', new URL(href, formattedUrl).href);
+            }
+          });
+
+          // Add style to prevent iframe content from breaking layout
+          const styleTag = doc.createElement('style');
+          styleTag.textContent = `
+            body { 
+              width: 100% !important;
+              min-width: 100% !important;
+              margin: 0 !important;
+              padding: 0 !important;
+              overflow-x: hidden !important;
+            }
+            img { max-width: 100% !important; height: auto !important; }
+          `;
+          doc.head.appendChild(styleTag);
+
           setEmulatedContent(doc.documentElement.outerHTML);
         } else {
           toast({
@@ -142,6 +172,8 @@ const Browser = () => {
       setIsSearching(false);
     }
   };
+
+  // ... keep existing code (other functions)
 
   return (
     <div className="min-h-screen bg-background">
@@ -191,8 +223,8 @@ const Browser = () => {
               {emulatedContent ? (
                 <iframe
                   srcDoc={emulatedContent}
-                  className="w-full h-full bg-white"
-                  sandbox="allow-same-origin"
+                  className="w-full h-full"
+                  sandbox="allow-same-origin allow-forms"
                   title="Crawled content"
                 />
               ) : (
