@@ -30,6 +30,21 @@ export class FirecrawlService {
     return localStorage.getItem(this.API_KEY_STORAGE_KEY);
   }
 
+  static async testApiKey(apiKey: string): Promise<boolean> {
+    try {
+      const testApp = new FirecrawlApp({ apiKey });
+      const testResponse = await testApp.crawlUrl('https://example.com', {
+        limit: 1,
+        scrapeOptions: {
+          formats: ['html'],
+        }
+      });
+      return testResponse.success;
+    } catch (error) {
+      return false;
+    }
+  }
+
   static async crawlWebsite(url: string): Promise<{ success: boolean; error?: string; data?: any }> {
     const apiKey = this.getApiKey();
     if (!apiKey) {
