@@ -41,6 +41,9 @@ export class FirecrawlService {
       });
       return testResponse.success;
     } catch (error) {
+      if (error.response?.status === 429) {
+        throw new Error('Rate limit exceeded. Please wait a minute before trying again.');
+      }
       return false;
     }
   }
@@ -75,6 +78,14 @@ export class FirecrawlService {
         data: crawlResponse 
       };
     } catch (error) {
+      if (error.response?.status === 429) {
+        const resetTime = error.response?.headers?.['x-ratelimit-reset'];
+        const waitTime = resetTime ? new Date(resetTime).toLocaleTimeString() : 'about a minute';
+        return { 
+          success: false, 
+          error: `Rate limit exceeded. Please try again after ${waitTime}.`
+        };
+      }
       return { 
         success: false, 
         error: error instanceof Error ? error.message : 'Failed to connect to Firecrawl API' 
