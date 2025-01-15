@@ -144,33 +144,33 @@ const Browser = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white px-4">
-      <div className="mx-auto max-w-6xl">
-        <header className="flex items-center justify-between py-4">
-          <div className="flex items-center space-x-4">
-            <button className="rounded-full p-2 transition-colors hover:bg-gray-100">
-              <ArrowLeft className="h-5 w-5 text-gray-600" />
+    <div className="min-h-screen bg-background">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <header className="py-4 border-b border-border">
+          <div className="flex items-center space-x-2">
+            <button className="p-2 rounded-lg hover:bg-accent transition-colors">
+              <ArrowLeft className="h-5 w-5 text-foreground" />
             </button>
-            <button className="rounded-full p-2 transition-colors hover:bg-gray-100">
-              <ArrowRight className="h-5 w-5 text-gray-600" />
+            <button className="p-2 rounded-lg hover:bg-accent transition-colors">
+              <ArrowRight className="h-5 w-5 text-foreground" />
             </button>
-            <button className="rounded-full p-2 transition-colors hover:bg-gray-100">
-              <RotateCcw className="h-5 w-5 text-gray-600" />
+            <button className="p-2 rounded-lg hover:bg-accent transition-colors">
+              <RotateCcw className="h-5 w-5 text-foreground" />
             </button>
-            <button className="rounded-full p-2 transition-colors hover:bg-gray-100">
-              <Bookmark className="h-5 w-5 text-gray-600" />
+            <button className="p-2 rounded-lg hover:bg-accent transition-colors">
+              <Bookmark className="h-5 w-5 text-foreground" />
             </button>
-            <button className="rounded-full p-2 transition-colors hover:bg-gray-100">
-              <Clock className="h-5 w-5 text-gray-600" />
+            <button className="p-2 rounded-lg hover:bg-accent transition-colors">
+              <Clock className="h-5 w-5 text-foreground" />
             </button>
           </div>
         </header>
 
-        <main className="py-12">
+        <main className="py-8">
           {!FirecrawlService.getApiKey() && (
-            <form onSubmit={handleApiKeySubmit} className="mb-8 space-y-4">
+            <form onSubmit={handleApiKeySubmit} className="mb-8 space-y-4 max-w-md mx-auto">
               <div className="space-y-2">
-                <label htmlFor="apiKey" className="text-sm font-medium text-gray-700">
+                <label htmlFor="apiKey" className="text-sm font-medium text-foreground">
                   Enter your Firecrawl API Key
                 </label>
                 <Input
@@ -179,25 +179,25 @@ const Browser = () => {
                   value={apiKey}
                   onChange={(e) => setApiKey(e.target.value)}
                   placeholder="Enter your API key"
-                  className="max-w-md"
+                  className="w-full"
                 />
               </div>
-              <Button type="submit">Save API Key</Button>
+              <Button type="submit" className="w-full">Save API Key</Button>
             </form>
           )}
 
           {currentUrl ? (
-            <div className="w-full h-[80vh] rounded-lg overflow-hidden border border-gray-200 bg-white">
+            <div className="w-full h-[80vh] rounded-lg overflow-hidden border border-border bg-card">
               {emulatedContent ? (
                 <iframe
                   srcDoc={emulatedContent}
-                  className="w-full h-full"
+                  className="w-full h-full bg-white"
                   sandbox="allow-same-origin"
                   title="Crawled content"
                 />
               ) : (
                 <div className="w-full h-full flex items-center justify-center">
-                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900" />
+                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary" />
                 </div>
               )}
             </div>
