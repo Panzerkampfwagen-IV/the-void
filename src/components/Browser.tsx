@@ -45,7 +45,7 @@ const Browser = () => {
     } catch (error) {
       toast({
         title: "Error",
-        description: "Failed to validate API key",
+        description: error instanceof Error ? error.message : "Failed to validate API key",
         variant: "destructive",
       });
     }
@@ -100,7 +100,24 @@ const Browser = () => {
       if (result.success && result.data) {
         const htmlContent = result.data.data?.[0]?.html;
         if (htmlContent) {
-          setEmulatedContent(htmlContent);
+          // Create a sanitized version of the HTML content
+          const parser = new DOMParser();
+          const doc = parser.parseFromString(htmlContent, 'text/html');
+          
+          // Remove scripts for security
+          doc.querySelectorAll('script').forEach(script => script.remove());
+          
+          // Update relative URLs to absolute
+          doc.querySelectorAll('[src], [href]').forEach(el => {
+            ['src', 'href'].forEach(attr => {
+              const value = el.getAttribute(attr);
+              if (value && !value.startsWith('http') && !value.startsWith('data:')) {
+                el.setAttribute(attr, new URL(value, formattedUrl).href);
+              }
+            });
+          });
+          
+          setEmulatedContent(doc.documentElement.outerHTML);
         } else {
           toast({
             title: "Error",
@@ -172,9 +189,11 @@ const Browser = () => {
           {currentUrl ? (
             <div className="w-full h-[80vh] rounded-lg overflow-hidden border border-gray-200 bg-white">
               {emulatedContent ? (
-                <div 
-                  className="w-full h-full overflow-auto p-4"
-                  dangerouslySetInnerHTML={{ __html: emulatedContent }}
+                <iframe
+                  srcDoc={emulatedContent}
+                  className="w-full h-full"
+                  sandbox="allow-same-origin"
+                  title="Crawled content"
                 />
               ) : (
                 <div className="w-full h-full flex items-center justify-center">
