@@ -1,8 +1,15 @@
 import { useState } from 'react';
-import { Bookmark, Clock, ArrowLeft, ArrowRight, RotateCcw } from 'lucide-react';
+import { Bookmark, Clock, ArrowLeft, ArrowRight, RotateCcw, Plus } from 'lucide-react';
 import { useToast } from "@/components/ui/use-toast";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import SearchBar from './SearchBar';
 import SearchResults from './SearchResults';
 import { cn } from '@/lib/utils';
@@ -21,9 +28,33 @@ const Browser = () => {
   const [currentUrl, setCurrentUrl] = useState('');
   const [emulatedContent, setEmulatedContent] = useState<string | null>(null);
   const [apiKey, setApiKey] = useState('');
-  const [bookmarks] = useState<Bookmark[]>([
-    { id: '1', title: 'Example Bookmark', url: 'https://example.com' },
-  ]);
+  const [bookmarks, setBookmarks] = useState<Bookmark[]>([]);
+  const [newBookmark, setNewBookmark] = useState({ title: '', url: '' });
+
+  const handleAddBookmark = () => {
+    if (!newBookmark.title || !newBookmark.url) {
+      toast({
+        title: "Error",
+        description: "Please fill in both title and URL",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const bookmark: Bookmark = {
+      id: Date.now().toString(),
+      title: newBookmark.title,
+      url: newBookmark.url,
+    };
+
+    setBookmarks([...bookmarks, bookmark]);
+    setNewBookmark({ title: '', url: '' });
+    
+    toast({
+      title: "Success",
+      description: "Bookmark added successfully",
+    });
+  };
 
   const handleApiKeySubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -173,8 +204,6 @@ const Browser = () => {
     }
   };
 
-  // ... keep existing code (other functions)
-
   return (
     <div className="min-h-screen bg-background">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
@@ -189,12 +218,56 @@ const Browser = () => {
             <button className="p-2 rounded-lg hover:bg-accent transition-colors">
               <RotateCcw className="h-5 w-5 text-foreground" />
             </button>
-            <button className="p-2 rounded-lg hover:bg-accent transition-colors">
-              <Bookmark className="h-5 w-5 text-foreground" />
-            </button>
-            <button className="p-2 rounded-lg hover:bg-accent transition-colors">
-              <Clock className="h-5 w-5 text-foreground" />
-            </button>
+            <Dialog>
+              <DialogTrigger asChild>
+                <button className="p-2 rounded-lg hover:bg-accent transition-colors">
+                  <Plus className="h-5 w-5 text-foreground" />
+                </button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Add Custom Bookmark</DialogTitle>
+                </DialogHeader>
+                <div className="space-y-4 py-4">
+                  <div className="space-y-2">
+                    <label htmlFor="title" className="text-sm font-medium">
+                      Title
+                    </label>
+                    <Input
+                      id="title"
+                      value={newBookmark.title}
+                      onChange={(e) => setNewBookmark({ ...newBookmark, title: e.target.value })}
+                      placeholder="Enter bookmark title"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label htmlFor="url" className="text-sm font-medium">
+                      URL
+                    </label>
+                    <Input
+                      id="url"
+                      value={newBookmark.url}
+                      onChange={(e) => setNewBookmark({ ...newBookmark, url: e.target.value })}
+                      placeholder="Enter website URL"
+                    />
+                  </div>
+                  <Button onClick={handleAddBookmark} className="w-full">
+                    Add Bookmark
+                  </Button>
+                </div>
+              </DialogContent>
+            </Dialog>
+            <div className="flex-1" />
+            {bookmarks.map((bookmark) => (
+              <button
+                key={bookmark.id}
+                onClick={() => handleVisitSite(bookmark.url)}
+                className="p-2 rounded-lg hover:bg-accent transition-colors flex items-center gap-2"
+              >
+                <Bookmark className="h-5 w-5 text-foreground" />
+                <span className="text-sm">{bookmark.title}</span>
+              </button>
+            ))}
           </div>
         </header>
 
