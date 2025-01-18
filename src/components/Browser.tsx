@@ -30,6 +30,8 @@ const Browser = () => {
   const [apiKey, setApiKey] = useState('');
   const [bookmarks, setBookmarks] = useState<Bookmark[]>([]);
   const [newBookmark, setNewBookmark] = useState({ title: '', url: '' });
+  const [isRateLimited, setIsRateLimited] = useState(false);
+  const [rateLimitResetTime, setRateLimitResetTime] = useState<string | null>(null);
 
   const handleAddBookmark = () => {
     if (!newBookmark.title || !newBookmark.url) {
@@ -118,6 +120,15 @@ const Browser = () => {
       return;
     }
 
+    if (isRateLimited) {
+      toast({
+        title: "Rate Limited",
+        description: `Please wait until ${rateLimitResetTime} before making another request.`,
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsSearching(true);
     setEmulatedContent(null);
     
@@ -150,21 +161,11 @@ const Browser = () => {
             });
           });
 
-          // Preserve original styles
+          // Add base tag and styles
           const baseTag = doc.createElement('base');
           baseTag.href = formattedUrl;
           doc.head.insertBefore(baseTag, doc.head.firstChild);
 
-          // Ensure all stylesheets are loaded
-          const styleSheets = Array.from(doc.querySelectorAll('link[rel="stylesheet"]'));
-          styleSheets.forEach(stylesheet => {
-            const href = stylesheet.getAttribute('href');
-            if (href && !href.startsWith('http')) {
-              stylesheet.setAttribute('href', new URL(href, formattedUrl).href);
-            }
-          });
-
-          // Add style to prevent iframe content from breaking layout
           const styleTag = doc.createElement('style');
           styleTag.textContent = `
             body { 
@@ -193,12 +194,32 @@ const Browser = () => {
           variant: "destructive",
         });
       }
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to load website",
-        variant: "destructive",
-      });
+    } catch (error: any) {
+      if (error.response?.status === 429) {
+        const resetTime = new Date(error.response.headers?.['x-ratelimit-reset'] || Date.now() + 10000);
+        setIsRateLimited(true);
+        setRateLimitResetTime(resetTime.toLocaleTimeString());
+        
+        toast({
+          title: "Rate Limit Exceeded",
+          description: `Please wait until ${resetTime.toLocaleTimeString()} before making another request.`,
+          variant: "destructive",
+        });
+
+        // Automatically reset rate limit status after the reset time
+        const timeoutId = setTimeout(() => {
+          setIsRateLimited(false);
+          setRateLimitResetTime(null);
+        }, resetTime.getTime() - Date.now());
+
+        return () => clearTimeout(timeoutId);
+      } else {
+        toast({
+          title: "Error",
+          description: "Failed to load website",
+          variant: "destructive",
+        });
+      }
     } finally {
       setIsSearching(false);
     }
